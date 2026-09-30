@@ -1,0 +1,646 @@
+"use client";
+
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
+import { Reveal } from "@/components/animations";
+import { FloatingHearts } from "@/components/floating-hearts";
+import { SectionDivider } from "@/components/section-divider";
+import { FoldCard, FoldSection } from "@/components/fold-card";
+import { ImageModal } from "@/components/image-modal";
+import Image from "next/image";
+
+
+
+/*
+  ╔══════════════════════════════════════════════════╗
+  ║  ✏️  EDIT YOUR TIMELINE HERE                    ║
+  ║  Each object = one card on the page.            ║
+  ║  Change title, time, date, description freely.  ║
+  ╚══════════════════════════════════════════════════╝
+*/
+
+interface TimelineItem {
+  emoji: string;
+  time: string;
+  date: string;
+  title: string;
+  description: string;
+  image: string | null;
+}
+
+const TIMELINE: TimelineItem[] = [
+  {
+    emoji: "💬",
+    time: "00:00",
+    date: "15 August 2026",
+    title: "tin nhắn đầu tiên 💌",
+    description:
+      "Phạm Anh Tuấn và tin nhắn chúc mừng sinh nhật - Nhân Phạm trả lời rồi nói chuyện đến 2h sáng",
+    image: null,
+  },
+  {
+    emoji: "💘",
+    time: "00:00",
+    date: "26 August 2023",
+    title: "hơi yếu nòg",
+    description:
+      "Bi bắt đầu có cảm tình với Nhân ngố tàu, bắt đầu thik nhắn tin, coi Nhân như phần khôg thể thiếu của 1 ngày",
+    image: null,
+  },
+  {
+    emoji: "🍼",
+    time: "19:30",
+    date: "29 September 2023",
+    title: "Tặng cốc nước đầu tiên",
+    description:
+      "Bi định dủ Nhân đi choi trung thu mà bi còn ngại nên bi tặng cốc nước thử lòng sem Nhân có thik Bi hog",
+    image: null,
+  },
+  {
+    emoji: "💕",
+    time: "21:00",
+    date: "24 December 2023",
+    title: "Super bạn thân",
+    description:
+      "'chúng mik làm siêu bạn thân rồi lên đại học yêu sau nha!!!' câu nói sau buổi Noel, nói sau khi nắm tay chụp ảnh",
+    image: "/photos/namtay.jpg",
+  },
+  {
+    emoji: "🏖️",
+    time: "15:00",
+    date: "17 February 2024",
+    title: "Mik đi biển",
+    description:
+      "buổi ik biển đầu tiên nma sau khi về thì quyết định sai lầm được đưa ra từ Phạm Anh Tuấn đã cho Phạm Nhân đột nhập facebook và rồi cái kết ngậm trái đắng khi phải hạ mik sin lỗi vì những gì mik ko làm sai",
+    image: "/photos/dibien.jpg",
+  },
+  {
+    emoji: "✏️",
+    time: "7:00",
+    date: "22 June 2024",
+    title: "Ảnh cuối cùng thời học sinh",
+    description:
+      "Buổi gần mà chúng mình còn chung 1 mái trường. Hồi mà mik còn ngây thơ vô lo vô ngĩ",
+    image: "/photos/anhkiyeu.jpg",
+  },
+  {
+    emoji: "🎂",
+    time: "15:00",
+    date: "26 August 2024",
+    title: "Kỉ niệm 1 nămmmm",
+    description:
+      "Tròn 1 năm Bi yêu say đắm Nhân ngố nhưng Nhân ngố thì chưa vì nghe đồn thời đấy còn đi tìm hiểu 3-4 thằng cùng lúc cơ",
+    image: "/photos/oneyear.jpg",
+  },
+  {
+    emoji: "🐔",
+    time: "19:30",
+    date: "5 September 2024",
+    title: "Hello Hanoiii",
+    description:
+      "Đơn giản là đi ăn gà jobili nhưng chưa biết để nguyên con, nếu biết sớm hơn thì đã khác",
+    image: "/photos/firstdate.jpg",
+  },
+  {
+    emoji: "🔞",
+    time: "14:30",
+    date: "14 December 2024",
+    title: "Mái chịu trống",
+    description:
+      "Cần thêm kinh nghiệm",
+    image: "/photos/hotelfirst.jpg",
+  },  
+  {
+    emoji: "🏍️",
+    time: "10:00",
+    date: "15 June 2025",
+    title: "Đi hơi xa 1 trút",
+    description:
+      "Bi và Nhân lên núi rừng Ba Vì làm trò con bò, nơi mà Nhân ngố ko được ny chụp cho tấm nào đẹp vì ny bận vui chơi",
+    image: "/photos/disuoi.jpg",
+  },
+  {
+    emoji: "🎁",
+    time: "20:00",
+    date: "15 August 2025",
+    title: "Sinh nhật Nhân",
+    description:
+      "Bi và Nhân phá đảo Dokki rồi chửa ễnh bụng, bên cạnh đó là đi chụp photobooth ngố nhất thế giới",
+    image: "/photos/snhatnhan.jpg",
+  },
+  {
+    emoji: "🏚️",
+    time: "15:00",
+    date: "15 December 2025",
+    title: "Tìm nhà cho Bi",
+    description:
+      "Ngày mà 1 người muốn chụp ảnh đẹp còn 1 người muốn tìm trọ!!! Biến cố lớn nhất trong cuộc đời đại học của Bi - Bi rời xa nơi bi coi là ngôi nhà thứ 2, giờ nhớ lại CT12A vẫn thật là nhiều kỉ niệm với cmik. Tuy có những cãi vã trong hôm đó nhưng cả 2 đã làm lành(Bi đã làm lành).",
+    image: "/photos/timtro.jpg",
+  },
+  {
+    emoji: "🧗",
+    time: "10:00",
+    date: "29 March 2026",
+    title: "Leo lúi",
+    description:
+      "Lúc này là vẫn còn vui tươi lắm kkk, tí nữa thì cái đít quần kia đen sì. Bi phải kèm đàn con vịt zời leo núi ko thì lạc mất",
+    image: "/photos/leonui.jpg",
+  },
+  {
+    emoji: "🌇",
+    time: "17:00",
+    date: "1 May 2026",
+    title: "Ik đạp se",
+    description:
+      "Có lẽ Nhân đẹp nhất là ở khi cmik bên nhau, bên mảnh đất cmik lớn lên, bên cây lúa mà bố mẹ vất vả làm ra",
+    image: "/photos/canhdong.jpg",
+  },
+  {
+    emoji: "🧸",
+    time: "15:00",
+    date: "15 August 2026",
+    title: "Bi và Nhân trong ngày Nhân 20 tuổi đầu, cơ thể đã vượt qua đầu óc để hết là 1 trẻ trâu ♥",
+    description:
+      "Thiệp sinh nhật Happy birth day với bánh kem tạm bợ và 2 cốc nước tráng miệng, chỉ cần vậy là hạnh phúc vì đã có Nhân bên cạnh hihi",
+    image: "/photos/snhat20.jpg",
+  },
+];
+
+/*
+  ╔══════════════════════════════════════════════════╗
+  ║  ✏️  EDIT YOUR "YOU & ME" WORDS HERE            ║
+  ║  These float around the centre piece.           ║
+  ╚══════════════════════════════════════════════════╝
+*/
+const FLOATING_WORDS = [
+  "forever",
+  "Bi",
+  "always",
+  "together",
+  "Nhan",
+  "heart",
+  "home"
+];
+
+export default function Home() {
+  const [modalImage, setModalImage] = useState<{ src: string; alt: string } | null>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.8], [1, 0.95]);
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+
+  return (
+    <main className="relative overflow-x-hidden">
+      <FloatingHearts />
+
+      {/* ═══════════ HERO ═══════════ */}
+      <section
+        ref={heroRef}
+        className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 text-center sm:px-6"
+      >
+        {/* Gradient orbs — smaller on mobile */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/4 top-1/4 h-48 w-48 rounded-full bg-orchid/20 blur-[80px] sm:h-96 sm:w-96 sm:blur-[120px]" />
+          <div className="absolute bottom-1/4 right-1/4 h-40 w-40 rounded-full bg-plum/15 blur-[60px] sm:h-80 sm:w-80 sm:blur-[100px]" />
+          <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-powder/10 blur-[50px] sm:h-64 sm:w-64 sm:blur-[80px]" />
+        </div>
+
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+          className="relative z-10"
+        >
+          <Reveal variant="fadeDown" duration={0.8}>
+            <motion.p
+              className="text-xs font-medium tracking-[0.3em] uppercase text-plum sm:text-sm"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              Kỉ niệm 3 năm hihihi🥳🥳🥳
+            </motion.p>
+          </Reveal>
+
+          <Reveal variant="scaleUp" delay={0.2} duration={1}>
+            <h1 className="mt-4 font-display text-5xl leading-tight tracking-tight sm:mt-6 sm:text-8xl md:text-9xl">
+              <motion.span
+                className="bg-gradient-to-r from-plum via-saffron to-powder bg-[length:300%_100%] bg-clip-text text-transparent"
+                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+              >
+                Nhân ngố
+              </motion.span>
+            </h1>
+          </Reveal>
+
+          <Reveal variant="blur" delay={0.5}>
+            <p className="mx-auto mt-4 max-w-sm font-signature text-xl text-plum/70 sm:mt-6 sm:max-w-lg sm:text-2xl md:text-3xl">
+              tìn yêu của đời mik
+            </p>
+          </Reveal>
+
+          <Reveal variant="fadeUp" delay={0.7}>
+            <p className="mx-auto mt-4 max-w-xs text-xs leading-relaxed text-white/50 sm:mt-6 sm:max-w-md sm:text-sm">
+              29/9/2023📆
+            </p>
+          </Reveal>
+
+          <Reveal variant="fadeUp" delay={0.9}>
+            <motion.a
+              href="#our-story"
+              className="animate-pulse-glow group mt-8 inline-flex items-center gap-2 rounded-full border border-orchid/30 bg-orchid/10 px-6 py-2.5 text-xs font-medium text-plum backdrop-blur-sm transition-all duration-300 hover:border-orchid/60 hover:bg-orchid/20 sm:mt-10 sm:px-8 sm:py-3 sm:text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              tình tiết vụ án ♥️
+              <motion.span
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                ↓
+              </motion.span>
+            </motion.a>
+          </Reveal>
+        </motion.div>
+
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0e0b16] to-transparent sm:h-32" />
+      </section>
+
+      {/* ═══════════ TIMELINE — folding cards ═══════════ */}
+      <section id="our-story" className="relative px-4 py-20 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-3xl">
+          <Reveal variant="fadeUp">
+            <h2 className="text-center font-heading text-3xl tracking-wide text-plum sm:text-4xl md:text-5xl">
+              <motion.span
+                whileInView={{ backgroundSize: ["0% 2px", "100% 2px"] }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                style={{
+                  backgroundImage: "linear-gradient(to right, #FFAAEA, #98C1D9)",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "bottom center",
+                  backgroundSize: "0% 2px",
+                  paddingBottom: 4,
+                }}
+              >
+                Lịch sử cuộc tìn ♥️
+              </motion.span>
+            </h2>
+            <p className="mt-3 text-center text-xs text-white/40 sm:mt-4 sm:text-sm">
+              khởi nguồn của mọi sự hôi lông
+            </p>
+          </Reveal>
+
+          {/* Timeline with fold-in cards */}
+          <div className="relative mt-8 sm:mt-20">
+            {/* Vertical line — desktop only */}
+            <motion.div
+              className="absolute left-1/2 top-0 hidden h-full w-px sm:block"
+              style={{ background: "linear-gradient(to bottom, rgba(99,29,118,0.6), rgba(255,170,234,0.3), transparent)", transformOrigin: "top" }}
+              initial={{ scaleY: 0 }}
+              whileInView={{ scaleY: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+
+            {TIMELINE.map((item, i) => (
+              <FoldCard key={i} index={i} className="relative mb-5 last:mb-0 sm:mb-16">
+                <div
+                  className={`flex items-start sm:gap-16 ${
+                    i % 2 === 0
+                      ? "sm:flex-row"
+                      : "sm:flex-row-reverse sm:text-right"
+                  }`}
+                >
+                  {/* Dot on timeline — desktop only */}
+                  <div className="absolute left-1/2 top-6 z-10 hidden h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center sm:flex">
+                    <motion.span
+                      className="absolute h-4 w-4 rounded-full border-2 border-orchid bg-[#0e0b16]"
+                      whileInView={{ scale: [0, 1.2, 1] }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: i * 0.1 }}
+                    />
+                    <motion.span
+                      className="absolute h-2 w-2 rounded-full bg-plum"
+                      whileInView={{ scale: [0, 1] }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.3, delay: i * 0.1 + 0.2 }}
+                    />
+                  </div>
+
+                  {/* Content card */}
+                  <div
+                    className={`w-full overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] transition-all duration-300 hover:border-orchid/20 hover:bg-white/[0.06] sm:w-[calc(50%-2rem)] ${
+                      i % 2 === 0 ? "" : "sm:ml-auto"
+                    }`}
+                  >
+                    {/* Text content */}
+                    <div className="p-4 sm:p-6">
+                      <div
+                        className={`flex items-center gap-2 sm:gap-3 ${
+                          i % 2 !== 0 ? "sm:flex-row-reverse" : ""
+                        }`}
+                      >
+                        <motion.span
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-orchid/20 text-base sm:h-8 sm:w-8"
+                          whileInView={{ rotate: [0, 10, -10, 0] }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.6, delay: i * 0.15 }}
+                        >
+                          {item.emoji}
+                        </motion.span>
+                        <div className="flex items-center gap-2">
+                          <time className="text-[10px] font-medium tracking-wider text-saffron/70 uppercase sm:text-xs">
+                            {item.time}
+                          </time>
+                          <span className="text-[9px] text-white/20 sm:text-[10px]">•</span>
+                          <span className="text-[9px] text-white/25 sm:text-[10px]">
+                            {item.date}
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="mt-2 font-display text-lg text-white sm:mt-3 sm:text-xl">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:mt-2 sm:text-sm">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {/* Chat screenshot — tap to open modal */}
+                    {item.image && (
+                      <button
+                        type="button"
+                        onClick={() => setModalImage({ src: item.image!, alt: item.title })}
+                        className="block w-full border-t border-white/5 active:opacity-80"
+                      >
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          width={400}
+                          height={300}
+                          className="w-full object-cover"
+                        />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </FoldCard>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <SectionDivider />
+
+      {/* ═══════════ YOU & ME ═══════════ */}
+      <FoldSection className="relative px-4 py-16 sm:px-6 sm:py-28">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orchid/8 blur-[80px] sm:h-96 sm:w-96 sm:blur-[120px]" />
+          <div className="absolute left-1/3 top-1/3 h-32 w-32 rounded-full bg-tomato/5 blur-[60px] sm:h-48 sm:w-48" />
+          <div className="absolute right-1/3 bottom-1/3 h-32 w-32 rounded-full bg-plum/5 blur-[60px] sm:h-48 sm:w-48" />
+        </div>
+
+        <div className="relative mx-auto max-w-lg text-center">
+          {/* Floating words orbit */}
+          <div className="relative mx-auto mb-8 h-48 w-48 sm:mb-12 sm:h-64 sm:w-64">
+            {FLOATING_WORDS.map((word, i) => {
+              const angle = (360 / FLOATING_WORDS.length) * i;
+              const radius = 160;
+              return (
+                <motion.span
+                  key={word}
+                  className="absolute left-1/2 top-1/2 font-signature text-base text-pink-200/80 sm:text-lg"
+                  style={{
+                    x: `calc(-50% + ${Math.cos((angle * Math.PI) / 180) * radius}%)`,
+                    y: `calc(-50% + ${Math.sin((angle * Math.PI) / 180) * radius}%)`,
+                  }}
+                  animate={{
+                    opacity: [0.2, 0.6, 0.2],
+                    scale: [0.9, 1.05, 0.9],
+                  }}
+                  transition={{
+                    duration: 4 + i * 0.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: i * 0.6,
+                  }}
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
+
+            {/* Centre heart */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <motion.span
+                className="text-5xl sm:text-6xl"
+                animate={{
+                  scale: [1, 1.15, 1],
+                  filter: [
+                    "drop-shadow(0 0 8px rgba(255,170,234,0.3))",
+                    "drop-shadow(0 0 20px rgba(255,170,234,0.6))",
+                    "drop-shadow(0 0 8px rgba(255,170,234,0.3))",
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                💕
+              </motion.span>
+            </div>
+          </div>
+
+          {/* Main text */}
+          <Reveal variant="fadeUp">
+            <h2 className="font-heading text-3xl tracking-wide text-plum sm:text-4xl md:text-5xl">
+              <motion.span
+                whileInView={{ backgroundSize: ["0% 2px", "100% 2px"] }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                style={{
+                  backgroundImage: "linear-gradient(to right, #FB4D3D, #FFAAEA)",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "bottom center",
+                  backgroundSize: "0% 2px",
+                  paddingBottom: 4,
+                }}
+              >
+                Nhan & Bi
+              </motion.span>
+            </h2>
+          </Reveal>
+
+          <Reveal variant="fadeUp" delay={0.15}>
+            <p className="mt-4 font-signature text-lg text-white/30 sm:mt-5 sm:text-xl">
+              3 năm rồi đó!!!
+            </p>
+          </Reveal>
+
+          {/* Verse */}
+          <Reveal variant="fadeUp" delay={0.3}>
+            <div className="mt-8 space-y-3 sm:mt-10 sm:space-y-4">
+              <p className="text-sm leading-relaxed text-white/50 sm:text-base">
+                Bi mong mai này dù nắng mưa dãi dầu,
+              </p>
+              <p className="text-sm leading-relaxed text-white/50 sm:text-base">
+                Bi và Nhân mãi yêu nhau như ngày hôm nay.
+              </p>
+              <motion.p
+                className="pt-2 font-signature text-lg text-plum/60 sm:text-xl"
+                whileInView={{ opacity: [0, 1] }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, delay: 0.8 }}
+              >
+                Bi yêu Nhân!
+              </motion.p>
+            </div>
+          </Reveal>
+
+          {/* Day 1 badge */}
+          <Reveal variant="scaleUp" delay={0.5}>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-5 py-2.5 sm:mt-10 sm:px-6 sm:py-3">
+              <motion.span
+                className="text-sm text-saffron/70 sm:text-base"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                ✦
+              </motion.span>
+              <span className="text-xs tracking-widest text-white/40 uppercase sm:text-sm">
+                5namnuacuoinhau
+              </span>
+              <motion.span
+                className="text-sm text-saffron/70 sm:text-base"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+              >
+                ✦
+              </motion.span>
+            </div>
+          </Reveal>
+        </div>
+      </FoldSection>
+
+      <SectionDivider />
+
+      {/* ═══════════ LETTER — folds open ═══════════ */}
+      <FoldSection className="px-4 py-20 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-2xl">
+          <motion.div
+            className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] p-6 sm:rounded-3xl sm:p-10 md:p-14"
+            whileInView={{
+              boxShadow: [
+                "0 0 0px rgba(99,29,118,0)",
+                "0 0 60px rgba(99,29,118,0.15)",
+              ],
+            }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, delay: 0.3 }}
+          >
+            {/* Animated border shimmer */}
+            <motion.div
+              className="absolute inset-0 rounded-2xl border border-transparent sm:rounded-3xl"
+              style={{
+                background: "linear-gradient(90deg, transparent, rgba(255,170,234,0.1), transparent) border-box",
+                backgroundSize: "200% 100%",
+              }}
+              animate={{ backgroundPosition: ["-200% 0", "200% 0"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Corner decorations */}
+            <motion.div
+              className="absolute right-4 top-4 text-2xl text-orchid/10 sm:right-6 sm:top-6 sm:text-4xl"
+              animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              ✦
+            </motion.div>
+            <motion.div
+              className="absolute bottom-4 left-4 text-xl text-plum/10 sm:bottom-6 sm:left-6 sm:text-3xl"
+              animate={{ rotate: [360, 0], scale: [1, 1.15, 1] }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            >
+              ✦
+            </motion.div>
+            <motion.div
+              className="absolute left-4 top-4 text-lg text-saffron/5 sm:left-6 sm:top-6 sm:text-2xl"
+              animate={{ opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              ✶
+            </motion.div>
+
+            <Reveal variant="fadeUp">
+              <p className="font-signature text-2xl text-plum sm:text-3xl md:text-4xl">
+                Dear Nhan,
+              </p>
+            </Reveal>
+            <Reveal variant="fadeUp" delay={0.2}>
+              <div className="mt-4 space-y-3 text-xs leading-relaxed text-white/60 sm:mt-6 sm:space-y-4 sm:text-sm">
+                <p>
+                  Thật ra không phải 29/9, 30/9 hay bất kì ngày nào là một lễ kỉ niệm cả. Chúng mình bắt đầu mà không có một lời yêu rõ ràng,
+                  cái tình yêu không biết từ bao giờ nảy nở trong Bi rồi trong Nhân, cái thứ đấy không đong đếm được qua bất cứ ngày tháng hay tiền bạc.
+                </p>
+                <p>
+                  Bi yêu Nhân có thể như một cặp đôi vừa yêu còn mặn nồng, cũng có thể thấu hiểu như 1 cặp vợ chồng, cũng có thể đầm ấm, âm thầm như các cụ ông, cụ bà.
+                </p>
+                <p>
+                  Bi không biết mai này ra sao, cuộc sống ta sẽ thay đổi như thế nào, nhưng ở trong lúc này, lúc Nhân đang đọc dòng này, người yêu Nhân nhất trên đời là người đang ngồi cùng Nhân đấy :3
+                </p>
+                <p>
+                  Bi mong Nhân có thể kiên nhẫn, cố gắng hiểu cảm giác của Bi, Bi nhìn vậy thôi nhưng mong manh lắm. Nhẹ Nhàng hơn síu với mik nha.
+                </p>
+                <p className="text-white/80">
+                  Kỉ niệm 3 năm của chúng mình!!!
+                </p>
+              </div>
+            </Reveal>
+            <Reveal variant="fadeUp" delay={0.4}>
+              <p className="mt-6 font-signature text-xl text-saffron/60 sm:mt-8 sm:text-2xl">
+                Yêu mik tui nha bà ♥
+              </p>
+            </Reveal>
+          </motion.div>
+        </div>
+      </FoldSection>
+
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="relative border-t border-white/5 py-12 text-center sm:py-16">
+        <Reveal variant="fadeUp">
+          <motion.p
+            className="font-signature text-xl text-plum/40 sm:text-2xl"
+            whileInView={{ scale: [0.9, 1] }}
+            viewport={{ once: true }}
+          >
+            làm bằng cả{" "}
+            <motion.span
+              className="inline-block text-tomato/60"
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+            >
+              ♥
+            </motion.span>
+            {" "}cho bà Nhân ngố
+          </motion.p>
+          <p className="mt-3 text-xs text-white/30 sm:mt-4 sm:text-sm">
+            đừng public trang này pls mik ngại
+          </p>
+          <p className="mt-2 text-[10px] text-white/15 sm:text-xs">
+            29/9/2023 ♥
+          </p>
+        </Reveal>
+      </footer>
+      {/* Image lightbox modal */}
+      <ImageModal
+        src={modalImage?.src ?? null}
+        alt={modalImage?.alt ?? ""}
+        onClose={() => setModalImage(null)}
+      />
+    </main>
+  );
+}
